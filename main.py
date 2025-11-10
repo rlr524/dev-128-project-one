@@ -1,37 +1,12 @@
-# import the sqlite3 database module
-import sqlite3
+from database import Database
 
-# create a connection to the database file
-conn = sqlite3.connect("myDatabase.db")
-
-# create a cursor that we will use to move through the database
-cursor = conn.cursor()
-
-# check if the user table already exists, if so, drop it so we can start with a new table
-cursor.execute("DROP TABLE IF EXISTS user;")
-
-# create the table if it doesn't already exist
-# note that primary keys are automatically created in sqlit3 and referenced as rowid
-cursor.execute("CREATE TABLE user (first_name TEXT, last_name TEXT, email TEXT)")
-
-# create some records of data
-cursor.execute("INSERT INTO user VALUES (\"Tony\", \"Stark\", \"ironman@stark.com\")")
-cursor.execute("INSERT INTO user VALUES (\"Carol\", \"Danvers\", \"marvel@stark.com\")")
+db = Database()
+conn = db.connect()
 
 
-# query the table including the rowid primary key value
-cursor.execute("SELECT rowid, first_name, last_name, email FROM user")
-
-# store the results of a the query to a list called users
-users = cursor.fetchall()
+def main():
+    pass
 
 
-# now we can loop through the results of the query
-for this_user in users:
-  print(this_user[0], this_user[1], this_user[2], this_user[3])
-
-# save the updates to the database - if you don't commit any updates/inserts to the database will not be saved
-conn.commit()
-
-# close the connection
-conn.close()
+if __name__ == "__main__":
+    main()
