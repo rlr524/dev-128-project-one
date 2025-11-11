@@ -1,3 +1,12 @@
+"""
+Dev 128 Fall 2025 Section 27802
+Rob Ranf
+Programming Project 1: SQLite Database App
+Public repo: https://github.com/rlr524/dev-128-project-one
+
+services.py - All functions that interact with the database performing CRUD operations.
+"""
+
 import logging
 from database import Database
 from models import Drama, Genre
@@ -44,12 +53,12 @@ def get_drama(drama_id: int) -> Optional[Drama]:
     :param drama_id: An int representing the id of a drama
     :return: An Optional of a Drama object or None of the drama_id doesn't exist
     """
-    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, g.name AS genre_name, d.deleted 
+    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, d.genre_id, g.name, d.deleted 
            FROM dramas d join genres g ON g.genre_id = d.genre_id
            WHERE d.drama_id = ?'''
     with closing(conn.cursor()) as c:
         c.execute(q, (drama_id,))
-        drama_row: Any = c.fetchone
+        drama_row: Any = c.fetchone()
         if drama_row:
             return make_drama(drama_row)
         else:
@@ -63,7 +72,7 @@ def get_all_dramas() -> List[Drama]:
     Note: This can be debated as to if the logic for the deleted flag should be applied here or in the UI. For the
     sake of keeping the assignment fairly simple, I applied it here.
     """
-    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, d.genre_id, g.name AS genre_name, d.deleted 
+    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, d.genre_id, g.name, d.deleted 
            FROM dramas d JOIN genres g ON g.genre_id = d.genre_id
            WHERE d.deleted <> true'''
     with closing(conn.cursor()) as c:
@@ -101,7 +110,7 @@ def get_genre(genre_id: int) -> Optional[Genre]:
     q = '''SELECT genre_id, name FROM genres WHERE genre_id = ?'''
     with closing(conn.cursor()) as c:
         c.execute(q, (genre_id,))
-        genre_row: Any = c.fetchone
+        genre_row: Any = c.fetchone()
         if genre_row:
             return make_genre(genre_row)
         else:
@@ -114,9 +123,9 @@ def get_dramas_by_genre(genre_id: int) -> List[Drama]:
     :param genre_id: An int value representing the genre_id of a Genre object
     :return: A List of Drama objects
     """
-    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, g.name AS genre_name, d.deleted
+    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, d.genre_id, g.name, d.deleted
            FROM dramas d JOIN genres g ON g.genre_id = d.genre_id
-           WHERE d.genre_id = ?'''
+           WHERE d.genre_id = ? AND d.deleted <> true'''
     with closing(conn.cursor()) as c:
         c.execute(q, (genre_id,))
         results: List[Any] = c.fetchall()
@@ -130,9 +139,9 @@ def get_dramas_by_year(year: str) -> List[Drama]:
     :param year: A string value representing a four digit year
     :return: A List of Drama objects
     """
-    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, g.name AS genre_name, d.deleted
+    q = '''SELECT d.drama_id, d.title, d.year, d.episodes, d.genre_id, g.name, d.deleted
            FROM dramas d JOIN genres g ON g.genre_id = d.genre_id
-           WHERE d.year = ?'''
+           WHERE d.year = ? AND d.deleted <> true'''
     with closing(conn.cursor()) as c:
         c.execute(q, (year,))
         results: List[Any] = c.fetchall()
@@ -150,8 +159,19 @@ def add_drama(drama: Drama) -> None:
     :raises: A SQLite Database error if insertion fails. If this were a production application, I would include
     methods for this error handling in the Database class as it is specific to SQLite3.
     """
-    if not getattr(drama, "genre", None) or getattr(drama.genre, "genre_id", None) is None:
+    # account for that the genre id is passed as an int however is evaluated as a Genre object with an id or genre_id
+    if getattr(drama, "genre", None) is None:
         raise ValueError("drama genre id is required")
+
+    genre_value = drama.genre
+    if isinstance(genre_value, int):
+        genre_id = genre_value
+    else:
+        genre_id = getattr(genre_value, "id", None) or getattr(genre_value, "genre_id", None)
+
+    if genre_id is None:
+        raise ValueError("drama genre id is required")
+
     if not getattr(drama, "title", None):
         raise ValueError("drama title is required")
     if not getattr(drama, "year", None):
@@ -159,10 +179,10 @@ def add_drama(drama: Drama) -> None:
     if not getattr(drama, "episodes", None):
         raise ValueError("drama episodes is required")
 
-    s = '''INSERT INTO dramas (title, year, episodes, genre_id, deleted) VALUES (?, ?, ?, ?, false)'''
+    s = '''INSERT INTO dramas (title, year, episodes, genre_id, deleted) VALUES (?, ?, ?, ?, ?)'''
     try:
         with closing(conn.cursor()) as c:
-            c.execute(s, (drama.title, drama.year, drama.episodes, drama.genre.id, drama.deleted))
+            c.execute(s, (drama.title, drama.year, drama.episodes, drama.genre.id, getattr(drama, "deleted", False)))
         conn.commit()
     except conn.DatabaseError as e:
         try:

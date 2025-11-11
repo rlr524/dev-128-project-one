@@ -1,3 +1,12 @@
+"""
+Dev 128 Fall 2025 Section 27802
+Rob Ranf
+Programming Project 1: SQLite Database App
+Public repo: https://github.com/rlr524/dev-128-project-one
+
+ui.py - The user interface.
+"""
+
 from database import Database
 import services as s
 from typing import List, Optional
@@ -32,10 +41,10 @@ def display_genres() -> None:
 
 def display_dramas(dramas, title_term):
     print(f"{'*' * 5} DRAMAS {'*' * 5}")
-    print(f"{'ID':4}{'Title':40}{'Year':6}{'Episodes':4}{'Genre':20}")
-    print(f"{'*' * 76}")
+    print(f"{'ID':4}{'Title':40}{'Year':6}{'Episodes':10}{'Genre':20}")
+    print()
     for drama in dramas:
-        print(f"{drama.id:<4d}{drama.title:40}{drama.year:<6}{drama.episodes:<4d}{drama.genre.name: 20}")
+        print(f"{drama.id:<4d}{drama.title:40}{drama.year:<6}{drama.episodes:<10d}{drama.genre.name:20}")
     print()
 
 
